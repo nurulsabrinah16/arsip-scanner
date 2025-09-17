@@ -1,97 +1,159 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <title>📂 Peminjaman Arsip</title>
+  <meta charset="utf-8" />
+  <title>📂 Peminjaman Arsip - Scanner</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; text-align: center; padding: 20px; background: #f4f6f9; }
-    h1 { color: #2c3e50; }
-    #reader { width: 320px; margin: auto; display: none; }
-    .btn { padding: 10px 20px; margin: 10px; border-radius: 5px; border: none; cursor: pointer; font-weight: bold; }
-    .btn-scan { background: #27ae60; color: #fff; }
-    .btn-save { background: #3498db; color: #fff; width: 100%; }
-    .btn-cancel { background: #e74c3c; color: #fff; width: 100%; margin-top: 5px; }
-    .status { margin-top: 15px; font-weight: bold; }
-    /* Popup */
-    .popup { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-             background: rgba(0,0,0,0.5); justify-content: center; align-items: center; }
-    .popup-content { background: #fff; padding: 20px; border-radius: 10px; width: 300px; text-align: left; }
-    .popup-content h3 { margin-top: 0; text-align: center; }
-    input { width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: 1px solid #ccc; }
+    body{font-family:Arial,Helvetica,sans-serif;background:#f4f6f9;padding:20px;text-align:center}
+    h1{color:#2c3e50}
+    #reader{width:320px;margin:12px auto; display:none;}
+    .btn{padding:12px 18px;margin:10px;border-radius:8px;border:none;cursor:pointer;font-weight:bold}
+    .btn-scan{background:#27ae60;color:#fff}
+    .popup{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);align-items:center;justify-content:center}
+    .popup .box{background:#fff;padding:18px;border-radius:8px;width:320px;text-align:left}
+    input[type=text]{width:100%;padding:10px;margin-top:8px;border-radius:6px;border:1px solid #ccc}
+    .status{margin-top:12px;font-weight:bold}
+    pre.console{background:#111;color:#0f0;padding:10px;border-radius:6px;max-height:180px;overflow:auto;text-align:left}
   </style>
 </head>
 <body>
-
   <h1>📂 Sistem Peminjaman Arsip</h1>
-  <p>Klik tombol di bawah untuk mulai scan barcode arsip.</p>
+  <p>Klik tombol untuk mulai scan. Izinkan kamera bila diminta oleh browser.</p>
 
-  <!-- tombol mulai scan -->
-  <button class="btn btn-scan" onclick="startScanner()">📷 Mulai Scan</button>
+  <button id="startBtn" class="btn btn-scan">📷 Mulai Scan</button>
   <div id="reader"></div>
 
-  <div class="status" id="status"></div>
+  <div id="status" class="status"></div>
 
-  <!-- Popup input nama -->
-  <div class="popup" id="popup">
-    <div class="popup-content">
-      <h3>Data Arsip</h3>
-      <p id="popup-doc"></p>
-      <input type="text" id="nama" placeholder="Nama Peminjam">
-      <button class="btn btn-save" onclick="simpanData()">💾 Simpan</button>
-      <button class="btn btn-cancel" onclick="closePopup()">❌ Batal</button>
+  <!-- popup -->
+  <div id="popup" class="popup">
+    <div class="box">
+      <h3 style="text-align:center">Konfirmasi</h3>
+      <p id="popupDoc" style="white-space:pre-line"></p>
+      <label>Nama Peminjam:</label>
+      <input type="text" id="namaInput" placeholder="Masukkan nama peminjam" />
+      <div style="margin-top:10px">
+        <button id="saveBtn" class="btn btn-scan" style="background:#3498db">💾 Simpan</button>
+        <button id="cancelBtn" class="btn" style="background:#e74c3c;color:#fff">Batal</button>
+      </div>
     </div>
   </div>
 
+  <h4 style="margin-top:22px">Debug Console (lihat sini bila tombol tidak bekerja)</h4>
+  <pre id="log" class="console">Console log akan muncul di sini...</pre>
+
   <script>
-    const sheetURL = "PASTE_WEBAPP_URL_EXEC_HERE"; // ganti dengan URL Web App kamu
-    let html5QrCode, scannedData = {};
+    const sheetURL = "https://script.google.com/macros/s/AKfycbxzP_eCqAl9YjhhuLDwnFq-kzMyKc8-O_sPeNPVV5fjvBtb2zyGNRlZGBxW00rZJ5OL/exec"; // <-- GANTI DENGAN URL WEB APP (contoh: https://script.google.com/macros/s/XXX/exec)
 
-    function startScanner() {
-      document.getElementById("reader").style.display = "block";
-      html5QrCode = new Html5Qrcode("reader");
-      html5QrCode.start(
-        { facingMode: "environment" }, // kamera belakang
-        { fps: 10, qrbox: 250 },
-        (decodedText) => {
-          const parts = decodedText.split("|");
-          scannedData.kode = parts[0] || "";
-          scannedData.dokumen = parts[1] || "";
-          html5QrCode.stop();
-          document.getElementById("popup-doc").innerText =
-            `Kode Arsip: ${scannedData.kode}\nDokumen: ${scannedData.dokumen}`;
-          document.getElementById("popup").style.display = "flex";
+    const logEl = document.getElementById('log');
+    function log(msg){ console.log(msg); logEl.textContent += "\\n" + msg; logEl.scrollTop = logEl.scrollHeight; }
+
+    let html5QrCode = null;
+    let scanned = null;
+    const startBtn = document.getElementById('startBtn');
+    const readerEl = document.getElementById('reader');
+    const statusEl = document.getElementById('status');
+    const popup = document.getElementById('popup');
+    const popupDoc = document.getElementById('popupDoc');
+    const namaInput = document.getElementById('namaInput');
+    const saveBtn = document.getElementById('saveBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+
+    // cek dukungan kamera
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      statusEl.innerText = "⚠️ Browser ini tidak mendukung kamera (getUserMedia). Gunakan Chrome/Edge terbaru di HP atau desktop.";
+      log("getUserMedia tidak tersedia di navigator.mediaDevices");
+      startBtn.disabled = true;
+    }
+
+    startBtn.addEventListener('click', async () => {
+      startBtn.disabled = true;
+      statusEl.innerText = "Mencoba mengakses kamera...";
+      log("Tombol Mulai Scan diklik. Memuat library html5-qrcode...");
+      try {
+        if (typeof Html5Qrcode === 'undefined') {
+          throw new Error("Library html5-qrcode tidak termuat (Html5Qrcode undefined). Periksa koneksi atau src tag.");
         }
-      ).catch(err => console.error("Camera error:", err));
-    }
 
-    function closePopup() {
-      document.getElementById("popup").style.display = "none";
-    }
+        readerEl.style.display = "block";
+        html5QrCode = new Html5Qrcode("reader");
 
-    function simpanData() {
-      const nama = document.getElementById("nama").value;
-      if (!scannedData.kode || !scannedData.dokumen || !nama) {
-        alert("⚠️ Lengkapi nama peminjam!");
-        return;
+        await html5QrCode.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: 250 },
+          (decodedText) => {
+            log("Terbaca: " + decodedText);
+            // simpan temporary dan hentikan kamera
+            scanned = decodedText;
+            html5QrCode.stop().then(() => {
+              log("Kamera dihentikan setelah scan.");
+              statusEl.innerText = "Scan berhasil: " + decodedText;
+              // tampilkan popup konfirmasi
+              popupDoc.innerText = `Kode: ${decodedText.split("|")[0] || ''}\\nDokumen: ${decodedText.split("|")[1] || ''}`;
+              popup.style.display = "flex";
+              namaInput.focus();
+            }).catch(err => {
+              log("Gagal stop kamera: " + err);
+              statusEl.innerText = "Terbaca, tetapi gagal menghentikan kamera: " + err;
+            });
+          },
+          (error) => {
+            // error kecil pembacaan, abaikan tapi log
+            log("Scan error (callback): " + error);
+          }
+        );
+        statusEl.innerText = "Arahkan kamera ke QR code...";
+        log("Start kamera: berhasil (menunggu scan).");
+      } catch (err) {
+        log("ERROR saat start kamera: " + err);
+        statusEl.innerText = "❌ Gagal membuka kamera: " + err.message;
+        startBtn.disabled = false;
       }
-      const data = { kode: scannedData.kode, dokumen: scannedData.dokumen, nama };
+    });
+
+    cancelBtn.addEventListener('click', () => {
+      popup.style.display = 'none';
+      namaInput.value = '';
+      statusEl.innerText = "Scan dibatalkan.";
+      startBtn.disabled = false;
+      // opsi: restart kamera otomatis jika mau
+    });
+
+    saveBtn.addEventListener('click', () => {
+      const nama = namaInput.value.trim();
+      if (!scanned) { alert("Belum ada hasil scan."); return; }
+      if (!nama) { alert("Isi nama peminjam."); namaInput.focus(); return; }
+      // kirim data ke Apps Script (no-cors karena response opaque)
+      const parts = scanned.split("|");
+      const payload = { kode: parts[0] || "", dokumen: parts[1] || "", nama: nama };
+      log("Kirim payload: " + JSON.stringify(payload));
+      statusEl.innerText = "Mengirim data ke Google Sheet...";
       fetch(sheetURL, {
         method: "POST",
         mode: "no-cors",
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
         headers: { "Content-Type": "application/json" }
-      })
-      .then(() => {
-        document.getElementById("status").innerText = "✅ Data berhasil disimpan!";
-        document.getElementById("nama").value = "";
-        closePopup();
-      })
-      .catch(err => {
-        document.getElementById("status").innerText = "❌ Gagal simpan: " + err.message;
+      }).then(() => {
+        statusEl.innerText = "✅ Data dikirim (cek Google Sheet).";
+        log("Fetch selesai (no-cors): request dikirim.");
+        popup.style.display = 'none';
+        namaInput.value = '';
+        startBtn.disabled = false;
+      }).catch(err => {
+        statusEl.innerText = "❌ Gagal mengirim: " + err.message;
+        log("Fetch error: " + err);
+        startBtn.disabled = false;
       });
-    }
-  </script>
+    });
 
+    // hentikan kamera bila user pindah halaman
+    window.addEventListener('beforeunload', () => {
+      if (html5QrCode) {
+        try { html5QrCode.stop(); } catch(e) {}
+      }
+    });
+  </script>
 </body>
 </html>
