@@ -3,111 +3,50 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Scanner Barcode Arsip</title>
-  <script src="https://unpkg.com/html5-qrcode"></script>
+  <title>Scan Barcode Arsip</title>
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      padding: 20px;
-      background: #f7f7f7;
-    }
-    #reader {
-      width: 100%;
-      max-width: 400px;
-      margin: auto;
-    }
-    .result-box {
-      margin-top: 20px;
-      padding: 15px;
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0px 2px 5px rgba(0,0,0,0.2);
-    }
-    input, button {
-      padding: 10px;
-      margin-top: 10px;
-      width: 90%;
-      max-width: 300px;
-    }
-    button {
-      background: #2e7d32;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #1b5e20;
-    }
-  </style>
 </head>
 <body>
-  <h2>📑 Scanner Barcode Peminjaman Arsip</h2>
-  <div id="reader"></div>
-  
-  <div class="result-box" id="resultBox" style="display:none;">
-    <h3>Hasil Scan</h3>
-    <p><b>Kode Arsip:</b> <span id="kodeArsip"></span></p>
-    <p><b>Nama Dokumen:</b> <span id="namaDokumen"></span></p>
-    <p>
-      <label>Nama Peminjam:</label><br>
-      <input type="text" id="namaPeminjam" placeholder="Masukkan nama peminjam">
-    </p>
-    <button onclick="kirimData()">📤 Simpan ke Google Sheet</button>
-  </div>
+  <h2>📑 Scan Barcode Arsip</h2>
+  <div id="reader" style="width:300px;"></div>
+  <p>Hasil scan: <span id="result"></span></p>
 
   <script>
-    function onScanSuccess(decodedText) {
-      // Format data: KODE|NAMA DOKUMEN
-      const parts = decodedText.split("|");
-      if (parts.length === 2) {
-        document.getElementById("kodeArsip").innerText = parts[0];
-        document.getElementById("namaDokumen").innerText = parts[1];
-        document.getElementById("resultBox").style.display = "block";
-      } else {
-        alert("Format QR tidak sesuai! Harus: KODE|NAMA DOKUMEN");
-      }
+    function onScanSuccess(decodedText, decodedResult) {
+      document.getElementById("result").innerText = decodedText;
+
+      // Format [KODE ARSIP]|[NAMA DOKUMEN]
+      let parts = decodedText.split("|");
+      let kode = parts[0] || "";
+      let dokumen = parts[1] || "";
+
+      // Input nama peminjam
+      let nama = prompt("Masukkan Nama Peminjam (jika pengembalian, isi nama yang sama):");
+
+      // Kirim ke Google Sheet via Apps Script
+      fetch("https://script.google.com/macros/s/AKfycbyG_HjHw1TlQecqVF6KjDac3F9zfnUZn_MESGgYk9K3fCEPoXoq7C54ENmlDfq0wEwl/exec", {
+        method: "POST",
+        body: JSON.stringify({
+          kode: kode,
+          dokumen: dokumen,
+          nama: nama
+        }),
+        headers: {
+          "Content-Type": "application/json"
+        }
+      })
+      .then(res => res.text())
+      .then(txt => alert("✅ Data berhasil disimpan/diupdate!"))
+      .catch(err => alert("❌ Gagal simpan: " + err));
     }
 
-    function onScanFailure(error) {
-      // bisa diabaikan (scanner tetap jalan)
+    function onScanError(errorMessage) {
+      console.warn(`Scan error: ${errorMessage}`);
     }
 
     let html5QrcodeScanner = new Html5QrcodeScanner(
-      "reader", { fps: 10, qrbox: 250 }
-    );
-    html5QrcodeScanner.render(onScanSuccess, onScanFailure);
-
-    function kirimData() {
-      let kode = document.getElementById("kodeArsip").innerText;
-      let dokumen = document.getElementById("namaDokumen").innerText;
-      let nama = document.getElementById("namaPeminjam").value;
-
-      if (nama === "") {
-        alert("Nama peminjam harus diisi!");
-        return;
-      }
-
-      // Ganti URL di bawah dengan URL Web App Google Apps Script kamu
-      let url = "https://script.google.com/macros/s/AKfycbzx7XAxtp_YMJUbMLuukekR9LzPAUh3HmX04OcQLn63PD4wpfLjMqLekdzHmqw5yuuh/exec";
-      
-      fetch(url, {
-        method: "POST",
-        body: JSON.stringify({ kode: kode, dokumen: dokumen, nama: nama }),
-        headers: { "Content-Type": "application/json" }
-      })
-      .then(res => res.text())
-      .then(data => {
-        alert("✅ Data berhasil dikirim: " + data);
-      })
-      .catch(err => {
-        alert("❌ Gagal mengirim data: " + err);
-      });
-    }
+      "reader", { fps: 10, qrbox: 250 });
+    html5QrcodeScanner.render(onScanSuccess, onScanError);
   </script>
 </body>
 </html>
-
