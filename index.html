@@ -2,53 +2,74 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Scan Barcode Arsip</title>
-  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <title>Scanner Peminjaman Arsip</title>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+    #reader { width: 320px; margin: auto; }
+    input, button { padding: 10px; margin-top: 10px; width: 80%; }
+  </style>
 </head>
 <body>
-  <h2>📑 Scan Barcode Arsip</h2>
-  <div id="reader" style="width:300px;"></div>
-  <p>Hasil scan: <span id="result"></span></p>
+  <h2>📂 Scanner Peminjaman Arsip</h2>
+  <div id="reader"></div>
+  <p id="result">Silakan scan QR kode arsip...</p>
+
+  <input type="text" id="nama" placeholder="Masukkan nama peminjam">
+  <button onclick="kirimData()">Simpan ke Google Sheet</button>
 
   <script>
+    let scannedData = "";
+
     function onScanSuccess(decodedText, decodedResult) {
-      document.getElementById("result").innerText = decodedText;
+      scannedData = decodedText;
+      document.getElementById("result").innerText = "📌 Hasil scan: " + decodedText;
+    }
 
-      // Format [KODE ARSIP]|[NAMA DOKUMEN]
-      let parts = decodedText.split("|");
-      let kode = parts[0] || "";
-      let dokumen = parts[1] || "";
+    function onScanFailure(error) {
+      // Tidak perlu tampilkan error kecil
+    }
 
-      // Input nama peminjam
-      let nama = prompt("Masukkan Nama Peminjam (jika pengembalian, isi nama yang sama):");
+    // Inisialisasi scanner kamera
+    let html5QrcodeScanner = new Html5QrcodeScanner(
+      "reader", { fps: 10, qrbox: 250 });
+    html5QrcodeScanner.render(onScanSuccess, onScanFailure);
 
-      // Kirim ke Google Sheet via Apps Script
-      fetch("https://script.google.com/macros/s/AKfycbyG_HjHw1TlQecqVF6KjDac3F9zfnUZn_MESGgYk9K3fCEPoXoq7C54ENmlDfq0wEwl/exec", {
+    function kirimData() {
+      if (!scannedData) {
+        alert("Belum ada data hasil scan!");
+        return;
+      }
+
+      let nama = document.getElementById("nama").value.trim();
+      if (!nama) {
+        alert("Masukkan nama peminjam!");
+        return;
+      }
+
+      const parts = scannedData.split("|");
+      const data = {
+        kodeArsip: parts[0],
+        dokumen: parts[1],
+        namaPeminjam: nama
+      };
+
+      fetch("PASTE_URL_WEBAPP_DI_SINI", {
         method: "POST",
-        body: JSON.stringify({
-          kode: kode,
-          dokumen: dokumen,
-          nama: nama
-        }),
+        body: JSON.stringify(data),
         headers: {
           "Content-Type": "application/json"
         }
       })
-      .then(res => res.text())
-      .then(txt => alert("✅ Data berhasil disimpan/diupdate!"))
-      .catch(err => alert("❌ Gagal simpan: " + err));
+      .then(res => res.json())
+      .then(res => {
+        alert("✅ Data berhasil tersimpan di Google Sheet!");
+        document.getElementById("nama").value = "";
+      })
+      .catch(err => {
+        alert("❌ Gagal simpan: " + err);
+      });
     }
-
-    function onScanError(errorMessage) {
-      console.warn(`Scan error: ${errorMessage}`);
-    }
-
-    let html5QrcodeScanner = new Html5QrcodeScanner(
-      "reader", { fps: 10, qrbox: 250 });
-    html5QrcodeScanner.render(onScanSuccess, onScanError);
   </script>
 </body>
 </html>
-
-
