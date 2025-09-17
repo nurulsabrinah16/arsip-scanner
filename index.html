@@ -4,20 +4,13 @@
   <meta charset="utf-8" />
   <title>📂 Peminjaman Arsip - Scanner</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+  <!-- ganti unpkg dengan cdnjs -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
   <style>
-    body{font-family:Arial,Helvetica,sans-serif;background:#f4f6f9;padding:20px;text-align:center}
-    h1{color:#2c3e50}
-    #reader{width:320px;margin:12px auto; display:none;}
-    .btn{padding:12px 18px;margin:10px;border-radius:8px;border:none;cursor:pointer;font-weight:bold}
-    .btn-scan{background:#27ae60;color:#fff}
-    .popup{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);align-items:center;justify-content:center}
-    .popup .box{background:#fff;padding:18px;border-radius:8px;width:320px;text-align:left}
-    input[type=text]{width:100%;padding:10px;margin-top:8px;border-radius:6px;border:1px solid #ccc}
-    .status{margin-top:12px;font-weight:bold}
-    pre.console{background:#111;color:#0f0;padding:10px;border-radius:6px;max-height:180px;overflow:auto;text-align:left}
+    /* ... */
   </style>
 </head>
+
 <body>
   <h1>📂 Sistem Peminjaman Arsip</h1>
   <p>Klik tombol untuk mulai scan. Izinkan kamera bila diminta oleh browser.</p>
@@ -157,3 +150,4 @@
   </script>
 </body>
 </html>
+
