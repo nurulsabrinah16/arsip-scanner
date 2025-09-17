@@ -36,43 +36,51 @@
     html5QrcodeScanner.render(onScanSuccess, onScanFailure);
 
     function kirimData() {
-      if (!scannedData) {
-        alert("Belum ada data hasil scan!");
-        return;
-      }
+  if (!scannedData) {
+    alert("Belum ada data hasil scan!");
+    return;
+  }
 
-      let nama = document.getElementById("nama").value.trim();
-      if (!nama) {
-        alert("Masukkan nama peminjam!");
-        return;
-      }
+  let nama = document.getElementById("nama").value.trim();
+  if (!nama) {
+    alert("Masukkan nama peminjam!");
+    return;
+  }
 
-      const parts = scannedData.split("|");
-      const data = {
-        kodeArsip: parts[0],
-        dokumen: parts[1],
-        namaPeminjam: nama
-      };
+  const parts = scannedData.split("|");
+  const data = {
+    kodeArsip: parts[0],
+    dokumen: parts[1],
+    namaPeminjam: nama
+  };
 
-      fetch("https://script.google.com/macros/s/AKfycbxzP_eCqAl9YjhhuLDwnFq-kzMyKc8-O_sPeNPVV5fjvBtb2zyGNRlZGBxW00rZJ5OL/exec", {
-        method: "POST",
-        body: JSON.stringify(data),
-        headers: {
-          "Content-Type": "application/json"
-        }
-      })
-      .then(res => res.json())
-      .then(res => {
-        alert("✅ Data berhasil tersimpan di Google Sheet!");
-        document.getElementById("nama").value = "";
-      })
-      .catch(err => {
-        alert("❌ Gagal simpan: " + err);
-      });
+  fetch("https://script.google.com/macros/s/AKfycbxzP_eCqAl9YjhhuLDwnFq-kzMyKc8-O_sPeNPVV5fjvBtb2zyGNRlZGBxW00rZJ5OL/exec", {
+    method: "POST",
+    body: JSON.stringify(data),
+    headers: {
+      "Content-Type": "application/json"
     }
+  })
+  .then(res => {
+    if (!res.ok) {
+      throw new Error("Server error: " + res.status);
+    }
+    return res.json();
+  })
+  .then(res => {
+    alert("✅ Data berhasil tersimpan di Google Sheet!");
+    document.getElementById("nama").value = "";
+  })
+  .catch(err => {
+    alert("❌ Gagal simpan: " + err.message);
+    console.error(err);
+  });
+}
+
   </script>
 </body>
 </html>
+
 
 
 
