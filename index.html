@@ -8,14 +8,13 @@
     body { font-family: Arial, sans-serif; text-align: center; padding: 20px; background: #f4f6f9; }
     h1 { color: #2c3e50; }
     #reader { width: 320px; margin: auto; display: none; }
-    button { padding: 10px 20px; margin: 10px; border-radius: 5px; border: none; cursor: pointer; }
-    .btn-scan { background: #27ae60; color: #fff; font-weight: bold; }
-    .btn-save { background: #3498db; color: #fff; font-weight: bold; width: 100%; }
-    .btn-cancel { background: #e74c3c; color: #fff; font-weight: bold; width: 100%; margin-top: 5px; }
+    .btn { padding: 10px 20px; margin: 10px; border-radius: 5px; border: none; cursor: pointer; font-weight: bold; }
+    .btn-scan { background: #27ae60; color: #fff; }
+    .btn-save { background: #3498db; color: #fff; width: 100%; }
+    .btn-cancel { background: #e74c3c; color: #fff; width: 100%; margin-top: 5px; }
     .status { margin-top: 15px; font-weight: bold; }
-
-    /* Pop-up */
-    .popup { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+    /* Popup */
+    .popup { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
              background: rgba(0,0,0,0.5); justify-content: center; align-items: center; }
     .popup-content { background: #fff; padding: 20px; border-radius: 10px; width: 300px; text-align: left; }
     .popup-content h3 { margin-top: 0; text-align: center; }
@@ -27,38 +26,39 @@
   <h1>📂 Sistem Peminjaman Arsip</h1>
   <p>Klik tombol di bawah untuk mulai scan barcode arsip.</p>
 
-  <button class="btn-scan" onclick="startScanner()">📷 Mulai Scan</button>
+  <!-- tombol mulai scan -->
+  <button class="btn btn-scan" onclick="startScanner()">📷 Mulai Scan</button>
   <div id="reader"></div>
 
   <div class="status" id="status"></div>
 
-  <!-- Pop-up Input Nama -->
+  <!-- Popup input nama -->
   <div class="popup" id="popup">
     <div class="popup-content">
       <h3>Data Arsip</h3>
       <p id="popup-doc"></p>
       <input type="text" id="nama" placeholder="Nama Peminjam">
-      <button class="btn-save" onclick="simpanData()">💾 Simpan</button>
-      <button class="btn-cancel" onclick="closePopup()">❌ Batal</button>
+      <button class="btn btn-save" onclick="simpanData()">💾 Simpan</button>
+      <button class="btn btn-cancel" onclick="closePopup()">❌ Batal</button>
     </div>
   </div>
 
   <script>
-    const sheetURL = "https://script.google.com/macros/s/AKfycbxzP_eCqAl9YjhhuLDwnFq-kzMyKc8-O_sPeNPVV5fjvBtb2zyGNRlZGBxW00rZJ5OL/exec"; // Ganti dengan URL Web App kamu
+    const sheetURL = "PASTE_WEBAPP_URL_EXEC_HERE"; // ganti dengan URL Web App kamu
     let html5QrCode, scannedData = {};
 
     function startScanner() {
       document.getElementById("reader").style.display = "block";
       html5QrCode = new Html5Qrcode("reader");
       html5QrCode.start(
-        { facingMode: "environment" },
+        { facingMode: "environment" }, // kamera belakang
         { fps: 10, qrbox: 250 },
         (decodedText) => {
           const parts = decodedText.split("|");
           scannedData.kode = parts[0] || "";
           scannedData.dokumen = parts[1] || "";
           html5QrCode.stop();
-          document.getElementById("popup-doc").innerText = 
+          document.getElementById("popup-doc").innerText =
             `Kode Arsip: ${scannedData.kode}\nDokumen: ${scannedData.dokumen}`;
           document.getElementById("popup").style.display = "flex";
         }
@@ -75,9 +75,7 @@
         alert("⚠️ Lengkapi nama peminjam!");
         return;
       }
-
       const data = { kode: scannedData.kode, dokumen: scannedData.dokumen, nama };
-
       fetch(sheetURL, {
         method: "POST",
         mode: "no-cors",
