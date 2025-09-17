@@ -1,153 +1,132 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8">
   <title>📂 Peminjaman Arsip - Scanner</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <!-- ganti unpkg dengan cdnjs -->
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
   <style>
-    /* ... */
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #f0f2f5;
+    }
+    #reader {
+      width: 100%;
+      max-width: 500px;
+      margin: 20px auto;
+    }
+    #startScan {
+      display: block;
+      margin: 10px auto;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    #popup {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      justify-content: center;
+      align-items: center;
+    }
+    #popupContent {
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+    }
+    #popupContent input {
+      width: 80%;
+      padding: 8px;
+      margin: 10px 0;
+    }
+    #popupContent button {
+      padding: 8px 16px;
+    }
   </style>
 </head>
-
 <body>
-  <h1>📂 Sistem Peminjaman Arsip</h1>
-  <p>Klik tombol untuk mulai scan. Izinkan kamera bila diminta oleh browser.</p>
 
-  <button id="startBtn" class="btn btn-scan">📷 Mulai Scan</button>
-  <div id="reader"></div>
+<h2>📂 Peminjaman Arsip</h2>
+<button id="startScan">Mulai Scan QR Code</button>
+<div id="reader"></div>
 
-  <div id="status" class="status"></div>
-
-  <!-- popup -->
-  <div id="popup" class="popup">
-    <div class="box">
-      <h3 style="text-align:center">Konfirmasi</h3>
-      <p id="popupDoc" style="white-space:pre-line"></p>
-      <label>Nama Peminjam:</label>
-      <input type="text" id="namaInput" placeholder="Masukkan nama peminjam" />
-      <div style="margin-top:10px">
-        <button id="saveBtn" class="btn btn-scan" style="background:#3498db">💾 Simpan</button>
-        <button id="cancelBtn" class="btn" style="background:#e74c3c;color:#fff">Batal</button>
-      </div>
-    </div>
+<!-- Popup Nama Peminjam -->
+<div id="popup">
+  <div id="popupContent">
+    <h3>Masukkan Nama Peminjam</h3>
+    <input type="text" id="namaPeminjam" placeholder="Nama lengkap" />
+    <br/>
+    <button id="submitNama">Kirim</button>
   </div>
+</div>
 
-  <h4 style="margin-top:22px">Debug Console (lihat sini bila tombol tidak bekerja)</h4>
-  <pre id="log" class="console">Console log akan muncul di sini...</pre>
+<script>
+  const startScanBtn = document.getElementById('startScan');
+  const readerDiv = document.getElementById('reader');
+  const popup = document.getElementById('popup');
+  const namaInput = document.getElementById('namaPeminjam');
+  const submitBtn = document.getElementById('submitNama');
 
-  <script>
-    const sheetURL = "https://script.google.com/macros/s/AKfycbxzP_eCqAl9YjhhuLDwnFq-kzMyKc8-O_sPeNPVV5fjvBtb2zyGNRlZGBxW00rZJ5OL/exec"; // <-- GANTI DENGAN URL WEB APP (contoh: https://script.google.com/macros/s/XXX/exec)
+  let html5QrcodeScanner;
 
-    const logEl = document.getElementById('log');
-    function log(msg){ console.log(msg); logEl.textContent += "\\n" + msg; logEl.scrollTop = logEl.scrollHeight; }
+  startScanBtn.addEventListener('click', () => {
+    startScanBtn.disabled = true;
 
-    let html5QrCode = null;
-    let scanned = null;
-    const startBtn = document.getElementById('startBtn');
-    const readerEl = document.getElementById('reader');
-    const statusEl = document.getElementById('status');
-    const popup = document.getElementById('popup');
-    const popupDoc = document.getElementById('popupDoc');
-    const namaInput = document.getElementById('namaInput');
-    const saveBtn = document.getElementById('saveBtn');
-    const cancelBtn = document.getElementById('cancelBtn');
+    html5QrcodeScanner = new Html5Qrcode("reader");
 
-    // cek dukungan kamera
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      statusEl.innerText = "⚠️ Browser ini tidak mendukung kamera (getUserMedia). Gunakan Chrome/Edge terbaru di HP atau desktop.";
-      log("getUserMedia tidak tersedia di navigator.mediaDevices");
-      startBtn.disabled = true;
-    }
-
-    startBtn.addEventListener('click', async () => {
-      startBtn.disabled = true;
-      statusEl.innerText = "Mencoba mengakses kamera...";
-      log("Tombol Mulai Scan diklik. Memuat library html5-qrcode...");
-      try {
-        if (typeof Html5Qrcode === 'undefined') {
-          throw new Error("Library html5-qrcode tidak termuat (Html5Qrcode undefined). Periksa koneksi atau src tag.");
-        }
-
-        readerEl.style.display = "block";
-        html5QrCode = new Html5Qrcode("reader");
-
-        await html5QrCode.start(
-          { facingMode: "environment" },
-          { fps: 10, qrbox: 250 },
-          (decodedText) => {
-            log("Terbaca: " + decodedText);
-            // simpan temporary dan hentikan kamera
-            scanned = decodedText;
-            html5QrCode.stop().then(() => {
-              log("Kamera dihentikan setelah scan.");
-              statusEl.innerText = "Scan berhasil: " + decodedText;
-              // tampilkan popup konfirmasi
-              popupDoc.innerText = `Kode: ${decodedText.split("|")[0] || ''}\\nDokumen: ${decodedText.split("|")[1] || ''}`;
-              popup.style.display = "flex";
-              namaInput.focus();
-            }).catch(err => {
-              log("Gagal stop kamera: " + err);
-              statusEl.innerText = "Terbaca, tetapi gagal menghentikan kamera: " + err;
-            });
-          },
-          (error) => {
-            // error kecil pembacaan, abaikan tapi log
-            log("Scan error (callback): " + error);
-          }
-        );
-        statusEl.innerText = "Arahkan kamera ke QR code...";
-        log("Start kamera: berhasil (menunggu scan).");
-      } catch (err) {
-        log("ERROR saat start kamera: " + err);
-        statusEl.innerText = "❌ Gagal membuka kamera: " + err.message;
-        startBtn.disabled = false;
+    html5QrcodeScanner.start(
+      { facingMode: "environment" }, 
+      { fps: 10, qrbox: 250 },
+      qrCodeMessage => {
+        console.log("QR Code detected:", qrCodeMessage);
+        html5QrcodeScanner.stop();
+        readerDiv.innerHTML = "";
+        showPopup(qrCodeMessage);
+      },
+      errorMessage => {
+        // console.warn(`QR scan error: ${errorMessage}`);
       }
+    ).catch(err => {
+      console.error("Tidak bisa mengakses kamera:", err);
     });
+  });
 
-    cancelBtn.addEventListener('click', () => {
-      popup.style.display = 'none';
-      namaInput.value = '';
-      statusEl.innerText = "Scan dibatalkan.";
-      startBtn.disabled = false;
-      // opsi: restart kamera otomatis jika mau
-    });
-
-    saveBtn.addEventListener('click', () => {
+  function showPopup(qrCode) {
+    popup.style.display = 'flex';
+    submitBtn.onclick = () => {
       const nama = namaInput.value.trim();
-      if (!scanned) { alert("Belum ada hasil scan."); return; }
-      if (!nama) { alert("Isi nama peminjam."); namaInput.focus(); return; }
-      // kirim data ke Apps Script (no-cors karena response opaque)
-      const parts = scanned.split("|");
-      const payload = { kode: parts[0] || "", dokumen: parts[1] || "", nama: nama };
-      log("Kirim payload: " + JSON.stringify(payload));
-      statusEl.innerText = "Mengirim data ke Google Sheet...";
-      fetch(sheetURL, {
-        method: "POST",
-        mode: "no-cors",
-        body: JSON.stringify(payload),
-        headers: { "Content-Type": "application/json" }
-      }).then(() => {
-        statusEl.innerText = "✅ Data dikirim (cek Google Sheet).";
-        log("Fetch selesai (no-cors): request dikirim.");
-        popup.style.display = 'none';
-        namaInput.value = '';
-        startBtn.disabled = false;
-      }).catch(err => {
-        statusEl.innerText = "❌ Gagal mengirim: " + err.message;
-        log("Fetch error: " + err);
-        startBtn.disabled = false;
-      });
-    });
-
-    // hentikan kamera bila user pindah halaman
-    window.addEventListener('beforeunload', () => {
-      if (html5QrCode) {
-        try { html5QrCode.stop(); } catch(e) {}
+      if (!nama) {
+        alert("Nama peminjam wajib diisi!");
+        return;
       }
+      popup.style.display = 'none';
+      sendToSpreadsheet(qrCode, nama);
+      namaInput.value = "";
+      startScanBtn.disabled = false;
+    };
+  }
+
+  function sendToSpreadsheet(qrCode, nama) {
+    // URL Web App Google Apps Script
+    const scriptUrl = "https://script.google.com/macros/s/AKfycbxzP_eCqAl9YjhhuLDwnFq-kzMyKc8-O_sPeNPVV5fjvBtb2zyGNRlZGBxW00rZJ5OL/exec"; // ganti dengan URL Web App
+    fetch(scriptUrl, {
+      method: 'POST',
+      body: JSON.stringify({ qrCode, nama }),
+      headers: { 'Content-Type': 'application/json' }
+    })
+    .then(response => response.text())
+    .then(data => {
+      alert("Data berhasil dikirim ke Spreadsheet!");
+    })
+    .catch(err => {
+      console.error(err);
+      alert("Gagal mengirim data!");
     });
-  </script>
+  }
+</script>
 </body>
 </html>
-
