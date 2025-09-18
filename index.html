@@ -72,6 +72,7 @@
   const submitBtn = document.getElementById('submitNama');
 
   let html5QrcodeScanner;
+  let qrResult = "";
 
   startScanBtn.addEventListener('click', () => {
     startScanBtn.disabled = true;
@@ -85,7 +86,8 @@
         console.log("QR Code detected:", qrCodeMessage);
         html5QrcodeScanner.stop();
         readerDiv.innerHTML = "";
-        showPopup(qrCodeMessage);
+        qrResult = qrCodeMessage;
+        showPopup();
       },
       errorMessage => {
         // console.warn(`QR scan error: ${errorMessage}`);
@@ -95,50 +97,53 @@
     });
   });
 
-  function showPopup(qrCode) {
-  popup.style.display = 'flex';
-  submitBtn.onclick = () => {
-    const nama = namaInput.value.trim();
-    if (!nama) {
-      alert("Nama peminjam wajib diisi!");
-      return;
-    }
-    popup.style.display = 'none';
+  function showPopup() {
+    popup.style.display = 'flex';
+    submitBtn.onclick = () => {
+      const nama = namaInput.value.trim();
+      if (!nama) {
+        alert("Nama peminjam wajib diisi!");
+        return;
+      }
+      popup.style.display = 'none';
+      processData(qrResult, nama);
+      namaInput.value = "";
+      startScanBtn.disabled = false;
+    };
+  }
 
-    // pisahkan QR Code -> kode & dokumen
+  function processData(qrCode, nama) {
+    // Misal QR Code berisi: "KODE123|Dokumen Arsip"
     const parts = qrCode.split("|");
     const kode = parts[0] || "";
     const dokumen = parts[1] || "";
 
     sendToSpreadsheet(kode, dokumen, nama);
-    namaInput.value = "";
-    startScanBtn.disabled = false;
-  };
-}
+  }
 
-function sendToSpreadsheet(kode, dokumen, nama) {
-  const scriptUrl = "https://script.google.com/macros/s/AKfycbxxCzevSa-ZpSD7_MBJbp5mltpJw7bK_qVH5Q70EUa3jC4m6LdPBaIpeMnjvb2gsOuN/exec";
-  fetch(scriptUrl, {
-    method: 'POST',
-    body: JSON.stringify({ kode, dokumen, nama }),
-    headers: { 'Content-Type': 'application/json' }
-  })
-  .then(response => response.text())
-  .then(text => {
-    console.log("Server response:", text);
-    alert("Server reply: " + text);
-  })
-  .catch(err => {
-    console.error("Fetch error:", err);
-    alert("❌ Fetch gagal: " + err);
-  });
-}
+  function sendToSpreadsheet(kode, dokumen, nama) {
+    const scriptUrl = "https://script.google.com/macros/s/AKfycbxawV1KkS1LD6GCzEfvnp1GFm7zui3skNhyTfin-7cT1HiEo3Zpi3wwLBs-MtaI88Uz/exec"; // ganti dengan URL Web App Anda
 
+    const url = scriptUrl
+      + "?kode=" + encodeURIComponent(kode)
+      + "&dokumen=" + encodeURIComponent(dokumen)
+      + "&nama=" + encodeURIComponent(nama);
 
+    fetch(url)
+      .then(res => res.json())
+      .then(data => {
+        console.log("Server response:", data);
+        if (data.result === "success") {
+          alert("✅ Data berhasil dikirim!");
+        } else {
+          alert("❌ Gagal simpan: " + data.message);
+        }
+      })
+      .catch(err => {
+        console.error("Fetch error:", err);
+        alert("❌ Fetch gagal: " + err);
+      });
+  }
 </script>
 </body>
 </html>
-
-
-
-
