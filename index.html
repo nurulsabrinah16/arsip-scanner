@@ -112,7 +112,7 @@
 
   function sendToSpreadsheet(qrCode, nama) {
     // URL Web App Google Apps Script
-    const scriptUrl = "https://script.google.com/macros/s/AKfycbxzP_eCqAl9YjhhuLDwnFq-kzMyKc8-O_sPeNPVV5fjvBtb2zyGNRlZGBxW00rZJ5OL/exec"; // ganti dengan URL Web App
+    const scriptUrl = "https://script.google.com/macros/s/AKfycbxxCzevSa-ZpSD7_MBJbp5mltpJw7bK_qVH5Q70EUa3jC4m6LdPBaIpeMnjvb2gsOuN/exec"; // ganti dengan URL Web App
     fetch(scriptUrl, {
       method: 'POST',
       body: JSON.stringify({ qrCode, nama }),
@@ -130,3 +130,4 @@
 </script>
 </body>
 </html>
+
