@@ -117,28 +117,27 @@
 }
 
 function sendToSpreadsheet(kode, dokumen, nama) {
-  const scriptUrl = "https://script.google.com/macros/s/AKfycbxxCzevSa-ZpSD7_MBJbp5mltpJw7bK_qVH5Q70EUa3jC4m6LdPBaIpeMnjvb2gsOuN/exec"; 
+  const scriptUrl = "https://script.google.com/macros/s/AKfycbxxCzevSa-ZpSD7_MBJbp5mltpJw7bK_qVH5Q70EUa3jC4m6LdPBaIpeMnjvb2gsOuN/exec";
   fetch(scriptUrl, {
     method: 'POST',
     body: JSON.stringify({ kode, dokumen, nama }),
     headers: { 'Content-Type': 'application/json' }
   })
-  .then(response => response.json())
-  .then(data => {
-    if (data.result === "success") {
-      alert("✅ Data berhasil dikirim ke Spreadsheet!");
-    } else {
-      alert("⚠️ Gagal: " + data.message);
-    }
+  .then(response => response.text())
+  .then(text => {
+    console.log("Server response:", text);
+    alert("Server reply: " + text);
   })
   .catch(err => {
-    console.error(err);
-    alert("❌ Error saat mengirim data!");
+    console.error("Fetch error:", err);
+    alert("❌ Fetch gagal: " + err);
   });
 }
+
 
 </script>
 </body>
 </html>
+
 
 
