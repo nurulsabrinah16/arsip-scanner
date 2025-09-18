@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>🎯 Generator QR Code Arsip</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f2f5;
+      padding: 20px;
+      text-align: center;
+    }
+    input {
+      padding: 8px;
+      margin: 5px;
+      width: 80%;
+      max-width: 400px;
+    }
+    button {
+      padding: 10px 20px;
+      margin-top: 10px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    #qrcode {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h2>🎯 Generator QR Code Arsip</h2>
+  <p>Masukkan kode arsip dan nama dokumen, lalu klik "Buat QR".</p>
+
+  <input type="text" id="kode" placeholder="Kode Arsip (misal: ARSIP001)" /><br/>
+  <input type="text" id="dokumen" placeholder="Nama Dokumen (misal: Surat Keputusan 2024)" /><br/>
+  <button onclick="generateQR()">Buat QR</button>
+
+  <div id="qrcode"></div>
+  <p id="qrText" style="margin-top:10px; font-weight:bold;"></p>
+
+  <script>
+    function generateQR() {
+      const kode = document.getElementById("kode").value.trim();
+      const dokumen = document.getElementById("dokumen").value.trim();
+      const qrContainer = document.getElementById("qrcode");
+      const qrText = document.getElementById("qrText");
+
+      if (!kode || !dokumen) {
+        alert("Kode dan Dokumen wajib diisi!");
+        return;
+      }
+
+      // Format QR: "KODE|Dokumen"
+      const text = kode + "|" + dokumen;
+
+      qrContainer.innerHTML = ""; // reset dulu
+      new QRCode(qrContainer, {
+        text: text,
+        width: 200,
+        height: 200
+      });
+
+      qrText.textContent = "QR Code berisi: " + text;
+    }
+  </script>
+</body>
+</html>
